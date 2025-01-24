@@ -1,0 +1,62 @@
+import yfinance as yf
+import pandas as pd
+
+class Portfolio:
+    def __init__(self):
+        self.stocks = {}
+
+    def add_stock(self, ticker, shares):
+        """Add stock to portfolio or update existing stock."""
+        self.stocks[ticker] = self.stocks.get(ticker, 0) + shares
+        print(f"Added {shares} shares of {ticker}.")
+
+    def remove_stock(self, ticker, shares):
+        """Remove stock from portfolio if sufficient shares are available."""
+        if ticker in self.stocks and self.stocks[ticker] >= shares:
+            self.stocks[ticker] -= shares
+            if self.stocks[ticker] == 0:
+                del self.stocks[ticker]
+            print(f"Removed {shares} shares of {ticker}.")
+        else:
+            print(f"Not enough shares of {ticker} to remove.")
+
+    def _get_stock_price(self, ticker):
+        """Helper function to get the current price of a stock."""
+        stock = yf.Ticker(ticker)
+        try:
+            price = stock.history(period="1d")['Close'][0]
+            return price
+        except IndexError:
+            print(f"Could not retrieve data for {ticker}. Skipping.")
+            return None
+
+    def get_portfolio_value(self):
+        """Calculate the total value of the portfolio."""
+        total_value = 0
+        for ticker, shares in self.stocks.items():
+            price = self._get_stock_price(ticker)
+            if price:
+                total_value += price * shares
+        return total_value
+
+    def display_portfolio(self):
+        """Display the portfolio with stock details."""
+        data = []
+        for ticker, shares in self.stocks.items():
+            price = self._get_stock_price(ticker)
+            if price:
+                data.append([ticker, shares, price, price * shares])
+        if data:
+            df = pd.DataFrame(data, columns=["Ticker", "Shares", "Current Price", "Total Value"])
+            print(df)
+            print(f"\nTotal Portfolio Value: ${self.get_portfolio_value():.2f}")
+        else:
+            print("No data to display for portfolio.")
+
+# Test the Portfolio class
+portfolio = Portfolio()
+portfolio.add_stock("AAPL", 10)
+portfolio.add_stock("GOOGL", 15)
+portfolio.display_portfolio()
+portfolio.remove_stock("AAPL", 5)
+portfolio.display_portfolio()
